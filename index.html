@@ -1,0 +1,1380 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🔥 热血打卡 · 闯关待办</title>
+  <style>
+    /* ============================================================
+       CSS 变量 —— 方便后续修改配色、字号、动画速度
+       ============================================================ */
+    :root {
+      /* 主色调：紫蓝渐变 */
+      --primary-start: #6c5ce7;
+      --primary-end: #4834d4;
+      --primary-light: #a29bfe;
+      --primary-dark: #2d1b69;
+
+      /* 辅助活力橙 */
+      --accent: #ff6b35;
+      --accent-hover: #ff8c5a;
+      --accent-glow: rgba(255, 107, 53, 0.4);
+
+      /* 状态色 */
+      --success: #00d2a0;
+      --danger: #ff5e5e;
+
+      /* 文字 */
+      --text-primary: #1a1a2e;
+      --text-secondary: #555;
+      --text-muted: #aaa;
+      --text-light: #fff;
+
+      /* 卡片 */
+      --card-bg: rgba(255, 255, 255, 0.72);
+      --card-border: rgba(255, 255, 255, 0.5);
+      --card-shadow: 0 8px 40px rgba(108, 92, 231, 0.15), 0 2px 8px rgba(0,0,0,0.06);
+
+      /* 圆角 */
+      --radius-sm: 10px;
+      --radius-md: 18px;
+      --radius-lg: 26px;
+      --radius-xl: 32px;
+
+      /* 动画 */
+      --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+      --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+      --dur-fast: 0.2s;
+      --dur-normal: 0.35s;
+      --dur-slow: 0.6s;
+
+      /* 字体 */
+      --font-main: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+    }
+
+    /* ============================================================
+       基础重置 & 背景氛围
+       ============================================================ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-main);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 30px 16px 60px;
+      /* 蓝紫渐变底色 */
+      background: linear-gradient(135deg, #e8ecff 0%, #d5c9f5 25%, #c3d9ff 50%, #e0c3fc 75%, #dce4ff 100%);
+      background-attachment: fixed;
+      position: relative;
+      overflow-x: hidden;
+      -webkit-tap-highlight-color: transparent;
+      color: var(--text-primary);
+    }
+
+    /* ---- 流动微光动态光影层 ---- */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background:
+        radial-gradient(ellipse at 20% 20%, rgba(108, 92, 231, 0.12) 0%, transparent 55%),
+        radial-gradient(ellipse at 80% 70%, rgba(255, 107, 53, 0.08) 0%, transparent 55%),
+        radial-gradient(ellipse at 50% 50%, rgba(130, 180, 255, 0.06) 0%, transparent 60%);
+      animation: shimmer 8s ease-in-out infinite alternate;
+    }
+
+    @keyframes shimmer {
+      0%   { opacity: 0.6; transform: scale(1) translate(0, 0); }
+      50%  { opacity: 1; transform: scale(1.05) translate(-10px, 5px); }
+      100% { opacity: 0.7; transform: scale(1.02) translate(8px, -3px); }
+    }
+
+    /* ---- 主容器卡片 ---- */
+    .app-container {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 560px;
+      background: var(--card-bg);
+      backdrop-filter: blur(20px) saturate(160%);
+      -webkit-backdrop-filter: blur(20px) saturate(160%);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--card-shadow);
+      padding: 32px 28px 28px;
+      transition: box-shadow var(--dur-slow) var(--ease-smooth);
+    }
+
+    .app-container:hover {
+      box-shadow: 0 12px 50px rgba(108, 92, 231, 0.2), 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    /* ============================================================
+       [1] 标题打卡区
+       ============================================================ */
+    .header-section {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .main-title {
+      font-size: 2rem;
+      font-weight: 900;
+      letter-spacing: 2px;
+      background: linear-gradient(135deg, #6c5ce7, #ff6b35, #e6437b);
+      background-size: 200% 200%;
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: titleShine 3s ease-in-out infinite alternate;
+      margin-bottom: 4px;
+    }
+
+    @keyframes titleShine {
+      0%   { background-position: 0% 50%; }
+      100% { background-position: 100% 50%; }
+    }
+
+    .subtitle {
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+      font-weight: 500;
+      margin-bottom: 16px;
+    }
+
+    /* ---- 环形进度条 ---- */
+    .progress-ring-wrap {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 18px;
+      margin-bottom: 6px;
+    }
+
+    .progress-ring {
+      position: relative;
+      width: 100px;
+      height: 100px;
+      flex-shrink: 0;
+    }
+
+    .progress-ring svg {
+      transform: rotate(-90deg);
+      width: 100%;
+      height: 100%;
+    }
+
+    .progress-ring .bg-circle {
+      fill: none;
+      stroke: #e8e8f0;
+      stroke-width: 7;
+    }
+
+    .progress-ring .fg-circle {
+      fill: none;
+      stroke: url(#progressGradient);
+      stroke-width: 7;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.6s var(--ease-bounce);
+    }
+
+    .progress-text {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+    }
+
+    .progress-percent {
+      font-size: 1.4rem;
+      color: var(--primary-dark);
+      line-height: 1;
+    }
+
+    .progress-label {
+      font-size: 0.65rem;
+      color: var(--text-secondary);
+    }
+
+    .progress-detail {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+
+    .progress-detail span {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .streak-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      background: linear-gradient(135deg, var(--accent), #ff4500);
+      color: #fff;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      animation: pulse-badge 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-badge {
+      0%, 100% { box-shadow: 0 0 0 0 var(--accent-glow); }
+      50%      { box-shadow: 0 0 0 10px transparent; }
+    }
+
+    /* ============================================================
+       [2] 提醒设置区
+       ============================================================ */
+    .reminder-section {
+      background: rgba(108, 92, 231, 0.06);
+      border-radius: var(--radius-md);
+      padding: 16px 18px;
+      margin-bottom: 20px;
+    }
+
+    .section-label {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--primary-dark);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .reminder-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .reminder-row input[type="time"] {
+      flex: 1 1 140px;
+      min-width: 120px;
+      padding: 10px 14px;
+      border: 2px solid #ddd;
+      border-radius: var(--radius-sm);
+      font-size: 0.95rem;
+      font-family: var(--font-main);
+      background: #fff;
+      color: var(--text-primary);
+      transition: border var(--dur-fast) var(--ease-smooth);
+    }
+
+    .reminder-row input[type="time"]:focus {
+      outline: none;
+      border-color: var(--primary-light);
+      box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
+    }
+
+    .btn-reminder {
+      flex: 0 0 auto;
+      padding: 10px 18px;
+      background: linear-gradient(135deg, var(--primary-start), var(--primary-end));
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: transform var(--dur-fast) var(--ease-bounce), box-shadow var(--dur-fast) var(--ease-smooth);
+    }
+
+    .btn-reminder:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(108, 92, 231, 0.35);
+    }
+
+    .btn-reminder:active {
+      transform: scale(0.96);
+    }
+
+    .reminder-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+      min-height: 0;
+    }
+
+    .reminder-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: #fff;
+      border: 1.5px solid var(--primary-light);
+      border-radius: 20px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--primary-dark);
+      animation: slideInUp 0.3s var(--ease-bounce);
+    }
+
+    .reminder-tag .del-tag {
+      cursor: pointer;
+      font-size: 1rem;
+      line-height: 1;
+      color: var(--danger);
+      opacity: 0.7;
+      transition: opacity var(--dur-fast);
+    }
+
+    .reminder-tag .del-tag:hover { opacity: 1; }
+
+    /* ============================================================
+       [3] 任务输入区
+       ============================================================ */
+    .input-section {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .input-section input[type="text"] {
+      flex: 1;
+      padding: 14px 18px;
+      border: 2px solid #e0ddf5;
+      border-radius: var(--radius-md);
+      font-size: 1rem;
+      font-family: var(--font-main);
+      background: #fff;
+      color: var(--text-primary);
+      transition: all var(--dur-fast) var(--ease-smooth);
+    }
+
+    .input-section input[type="text"]:focus {
+      outline: none;
+      border-color: var(--primary-light);
+      box-shadow: 0 0 0 4px rgba(108, 92, 231, 0.08);
+      transform: translateY(-1px);
+    }
+
+    .input-section input[type="text"]::placeholder {
+      color: #c5c0e0;
+    }
+
+    .btn-add {
+      flex: 0 0 auto;
+      padding: 14px 24px;
+      background: linear-gradient(135deg, #ff6b35, #ff4500);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-md);
+      font-size: 1rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: transform var(--dur-fast) var(--ease-bounce), box-shadow var(--dur-fast) var(--ease-smooth);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-add::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.25), transparent);
+      opacity: 0;
+      transition: opacity var(--dur-fast);
+    }
+
+    .btn-add:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(255, 107, 53, 0.4);
+    }
+
+    .btn-add:hover::after { opacity: 1; }
+
+    .btn-add:active {
+      transform: scale(0.94);
+      transition: transform 0.1s;
+    }
+
+    /* ============================================================
+       [4] 分类筛选按钮组
+       ============================================================ */
+    .filter-section {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .btn-filter {
+      flex: 1;
+      min-width: 80px;
+      padding: 10px 14px;
+      border: 2px solid #e0ddf5;
+      border-radius: 25px;
+      background: #fff;
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all var(--dur-fast) var(--ease-smooth);
+      text-align: center;
+    }
+
+    .btn-filter:hover {
+      border-color: var(--primary-light);
+      color: var(--primary-dark);
+    }
+
+    .btn-filter.active {
+      background: linear-gradient(135deg, var(--primary-start), var(--primary-end));
+      color: #fff;
+      border-color: transparent;
+      box-shadow: 0 4px 14px rgba(108, 92, 231, 0.3);
+      transform: translateY(-1px);
+    }
+
+    /* ============================================================
+       [5] 待办任务列表
+       ============================================================ */
+    .task-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-height: 60px;
+      margin-bottom: 20px;
+    }
+
+    /* ---- 任务项 ---- */
+    .task-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      background: #fff;
+      border-radius: var(--radius-md);
+      border: 1.5px solid #ece9f8;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+      transition: all var(--dur-normal) var(--ease-smooth);
+      animation: slideInUp 0.4s var(--ease-bounce);
+    }
+
+    .task-item:hover {
+      border-color: #d5cff5;
+      box-shadow: 0 4px 16px rgba(108, 92, 231, 0.1);
+      transform: translateX(2px);
+    }
+
+    .task-item.completed {
+      opacity: 0.65;
+      border-color: #e8e8e8;
+    }
+
+    .task-item.removing {
+      animation: slideOutRight 0.3s var(--ease-smooth) forwards;
+    }
+
+    @keyframes slideInUp {
+      from { opacity: 0; transform: translateY(16px) scale(0.95); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    @keyframes slideOutRight {
+      to { opacity: 0; transform: translateX(60px) scale(0.9); }
+    }
+
+    /* ---- 自定义复选框 ---- */
+    .task-checkbox {
+      flex-shrink: 0;
+      width: 26px;
+      height: 26px;
+      appearance: none;
+      -webkit-appearance: none;
+      border: 2.5px solid #d5cff5;
+      border-radius: 50%;
+      cursor: pointer;
+      position: relative;
+      transition: all var(--dur-fast) var(--ease-bounce);
+      background: #fff;
+    }
+
+    .task-checkbox:hover {
+      border-color: var(--primary-light);
+      box-shadow: 0 0 0 4px rgba(108, 92, 231, 0.08);
+    }
+
+    .task-checkbox:checked {
+      background: var(--success);
+      border-color: var(--success);
+      animation: checkBounce 0.45s var(--ease-bounce);
+    }
+
+    .task-checkbox:checked::after {
+      content: '';
+      position: absolute;
+      left: 7px;
+      top: 3px;
+      width: 7px;
+      height: 12px;
+      border: solid #fff;
+      border-width: 0 2.5px 2.5px 0;
+      transform: rotate(45deg);
+    }
+
+    @keyframes checkBounce {
+      0%   { transform: scale(1); }
+      30%  { transform: scale(1.35); }
+      60%  { transform: scale(0.9); }
+      100% { transform: scale(1); }
+    }
+
+    /* 任务文字 */
+    .task-text {
+      flex: 1;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      word-break: break-word;
+      transition: color var(--dur-normal);
+    }
+
+    .task-item.completed .task-text {
+      color: var(--text-muted);
+      text-decoration: line-through;
+      text-decoration-thickness: 2px;
+      text-decoration-color: #d5d0e8;
+    }
+
+    /* 删除按钮 */
+    .btn-delete {
+      flex-shrink: 0;
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: transparent;
+      color: #ccc;
+      font-size: 1.1rem;
+      cursor: pointer;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all var(--dur-fast) var(--ease-smooth);
+    }
+
+    .btn-delete:hover {
+      color: var(--danger);
+      background: rgba(255, 94, 94, 0.08);
+      transform: scale(1.15);
+    }
+
+    /* ============================================================
+       [6] 底部操作区
+       ============================================================ */
+    .footer-section {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .btn-clear {
+      padding: 10px 20px;
+      background: transparent;
+      color: var(--text-muted);
+      border: 1.5px solid #e0ddf5;
+      border-radius: 25px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all var(--dur-fast) var(--ease-smooth);
+    }
+
+    .btn-clear:hover {
+      color: var(--danger);
+      border-color: var(--danger);
+      background: rgba(255, 94, 94, 0.04);
+      transform: translateY(-1px);
+    }
+
+    .btn-clear:active {
+      transform: scale(0.95);
+    }
+
+    /* ============================================================
+       激励弹窗 Toast
+       ============================================================ */
+    .toast-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    .toast {
+      background: linear-gradient(135deg, #1a1a2e, #2d1b69);
+      color: #fff;
+      padding: 18px 28px;
+      border-radius: var(--radius-md);
+      font-size: 1.05rem;
+      font-weight: 700;
+      text-align: center;
+      box-shadow: 0 12px 40px rgba(45, 27, 105, 0.5);
+      animation: toastPopIn 0.5s var(--ease-bounce), toastFadeOut 0.4s 2.2s var(--ease-smooth) forwards;
+      max-width: 90vw;
+      line-height: 1.5;
+    }
+
+    .toast .emoji { font-size: 2rem; display: block; margin-bottom: 4px; }
+
+    @keyframes toastPopIn {
+      0%   { opacity: 0; transform: scale(0.5) translateY(30px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    @keyframes toastFadeOut {
+      to { opacity: 0; transform: scale(0.8) translateY(-20px); }
+    }
+
+    /* ============================================================
+       空状态提示
+       ============================================================ */
+    .empty-state {
+      text-align: center;
+      padding: 28px 16px;
+      color: #c5c0e0;
+      font-size: 0.9rem;
+      font-weight: 600;
+      display: none;
+    }
+
+    /* 空状态由 JS 手动控制显示/隐藏 */
+
+    /* ============================================================
+       响应式适配
+       ============================================================ */
+    @media (max-width: 600px) {
+      body {
+        padding: 12px 10px 40px;
+      }
+
+      .app-container {
+        padding: 22px 16px 20px;
+        border-radius: var(--radius-lg);
+      }
+
+      .main-title {
+        font-size: 1.5rem;
+      }
+
+      .progress-ring {
+        width: 80px;
+        height: 80px;
+      }
+
+      .progress-percent {
+        font-size: 1.1rem;
+      }
+
+      .input-section {
+        flex-direction: column;
+      }
+
+      .btn-add {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .reminder-row {
+        flex-direction: column;
+      }
+
+      .btn-reminder {
+        width: 100%;
+        text-align: center;
+      }
+
+      .btn-filter {
+        font-size: 0.78rem;
+        padding: 8px 10px;
+      }
+
+      .task-item {
+        padding: 12px 14px;
+        gap: 10px;
+      }
+
+      .task-text {
+        font-size: 0.88rem;
+      }
+
+      .toast {
+        font-size: 0.9rem;
+        padding: 14px 20px;
+      }
+    }
+
+    @media (max-width: 380px) {
+      .main-title { font-size: 1.3rem; }
+      .progress-ring { width: 66px; height: 66px; }
+      .progress-percent { font-size: 1rem; }
+      .btn-filter { font-size: 0.72rem; padding: 7px 8px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ===== 主容器 ===== -->
+  <main class="app-container">
+
+    <!-- ===== [1] 标题打卡区 ===== -->
+    <header class="header-section">
+      <h1 class="main-title">⚡ 热血闯关 · 每日打卡 ⚡</h1>
+      <p class="subtitle" id="dateDisplay"></p>
+
+      <!-- 环形进度条 -->
+      <div class="progress-ring-wrap">
+        <div class="progress-ring">
+          <svg viewBox="0 0 100 100">
+            <defs>
+              <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#6c5ce7"/>
+                <stop offset="50%" stop-color="#a29bfe"/>
+                <stop offset="100%" stop-color="#ff6b35"/>
+              </linearGradient>
+            </defs>
+            <circle class="bg-circle" cx="50" cy="50" r="42"/>
+            <circle class="fg-circle" id="progressCircle" cx="50" cy="50" r="42"
+                    stroke-dasharray="263.89" stroke-dashoffset="263.89"/>
+          </svg>
+          <div class="progress-text">
+            <span class="progress-percent" id="progressPercent">0%</span>
+            <span class="progress-label">完成度</span>
+          </div>
+        </div>
+        <div class="progress-detail">
+          <span>✅ 已完成：<strong id="countDone">0</strong></span>
+          <span>📋 总任务：<strong id="countTotal">0</strong></span>
+          <span id="streakWrap"></span>
+        </div>
+      </div>
+    </header>
+
+    <!-- ===== [2] 提醒设置区 ===== -->
+    <section class="reminder-section">
+      <div class="section-label">⏰ 每日定时提醒</div>
+      <div class="reminder-row">
+        <input type="time" id="timeInput" title="选择提醒时间">
+        <button class="btn-reminder" id="btnAddReminder">➕ 添加提醒</button>
+      </div>
+      <div class="reminder-list" id="reminderList"></div>
+    </section>
+
+    <!-- ===== [3] 任务输入区 ===== -->
+    <div class="input-section">
+      <input type="text" id="taskInput" placeholder="🔥 输入你的热血目标……" maxlength="120" autocomplete="off">
+      <button class="btn-add" id="btnAdd">🚀 添加任务</button>
+    </div>
+
+    <!-- ===== [4] 分类筛选按钮组 ===== -->
+    <div class="filter-section">
+      <button class="btn-filter active" data-filter="all">📋 全部</button>
+      <button class="btn-filter" data-filter="active">⚡ 待完成</button>
+      <button class="btn-filter" data-filter="completed">✅ 已完成</button>
+    </div>
+
+    <!-- ===== [5] 任务列表 ===== -->
+    <ul class="task-list" id="taskList"></ul>
+    <div class="empty-state" id="emptyState"></div>
+
+    <!-- ===== [6] 底部操作区 ===== -->
+    <div class="footer-section">
+      <button class="btn-clear" id="btnClearDone">🧹 清空已完成</button>
+    </div>
+
+  </main>
+
+  <!-- ===== 激励弹窗容器 ===== -->
+  <div class="toast-overlay" id="toastOverlay"></div>
+
+  <script>
+  /* ==============================================================
+     热血打卡待办 — 纯原生 JavaScript 完整实现
+     功能：任务CRUD · 筛选 · 定时提醒 · localStorage持久化 · 趣味激励
+     ============================================================== */
+
+  (function () {
+    // ============================================================
+    // 常量配置 —— 后续可在此修改文案、动画时长等
+    // ============================================================
+    const CONFIG = {
+      DAILY_GOAL: 8,                    // 每日目标完成数
+      REMINDER_CHECK_INTERVAL: 1000,    // 提醒检查间隔（毫秒）
+      STORAGE_KEY_TASKS: 'hotblood_tasks',
+      STORAGE_KEY_REMINDERS: 'hotblood_reminders',
+      STORAGE_KEY_STREAK: 'hotblood_streak',
+      TOAST_DURATION: 2600,             // 激励弹窗总展示时长
+    };
+
+    // 热血鼓励文案池
+    const CHEERS = [
+      { emoji: '🎯', text: '太棒了！又完成一项，离通关更近一步！' },
+      { emoji: '🔥', text: '燃起来了！这就是热血的感觉！' },
+      { emoji: '💪', text: '无敌是多么寂寞，继续冲！' },
+      { emoji: '⚡', text: '闪电般的效率，根本停不下来！' },
+      { emoji: '🏆', text: '冠军心态，每个任务都全力以赴！' },
+      { emoji: '🌟', text: '你就是今天最闪亮的星！' },
+      { emoji: '🚀', text: '起飞！今天的你势不可挡！' },
+      { emoji: '👑', text: '王者归来，任务在你面前不堪一击！' },
+      { emoji: '🎉', text: '又下一城！成就感爆棚！' },
+      { emoji: '💎', text: '每一个完成都是闪耀的钻石！' },
+      { emoji: '🦁', text: '猛兽出击，任务全部拿下！' },
+      { emoji: '🌈', text: '风雨过后见彩虹，坚持就是胜利！' },
+    ];
+
+    // 每日达标专属文案
+    const GOAL_CHEERS = [
+      { emoji: '🏅', text: '今日目标达成！你就是打卡之王！' },
+      { emoji: '🎊', text: '满额完成！今天的你超越了99%的人！' },
+      { emoji: '🔥', text: '全清！热血值已爆表，明天继续燃！' },
+      { emoji: '👑', text: '登顶成功！所有任务都被你征服了！' },
+    ];
+
+    // ============================================================
+    // DOM 引用缓存
+    // ============================================================
+    const $ = (sel) => document.querySelector(sel);
+    const $$ = (sel) => document.querySelectorAll(sel);
+
+    const domTaskList    = $('#taskList');
+    const domTaskInput   = $('#taskInput');
+    const domBtnAdd      = $('#btnAdd');
+    const domBtnClear    = $('#btnClearDone');
+    const domFilterBtns  = $$('.btn-filter');
+    const domPercent     = $('#progressPercent');
+    const domCountDone   = $('#countDone');
+    const domCountTotal  = $('#countTotal');
+    const domStreakWrap  = $('#streakWrap');
+    const domDateDisplay = $('#dateDisplay');
+    const domProgressCircle = $('#progressCircle');
+    const domToastOverlay  = $('#toastOverlay');
+    const domReminderList  = $('#reminderList');
+    const domTimeInput     = $('#timeInput');
+    const domBtnAddReminder = $('#btnAddReminder');
+    const domEmptyState    = $('#emptyState');
+
+    // ============================================================
+    // 数据状态
+    // ============================================================
+    let tasks = [];           // { id, text, done, createdAt }
+    let reminders = [];       // ["08:00", "12:30", ...]
+    let currentFilter = 'all';
+    let toastTimer = null;
+    let reminderIntervalId = null;
+
+    // 连续打卡天数数据
+    let streakData = { count: 0, lastDate: null };
+
+    // ============================================================
+    // localStorage 读写
+    // ============================================================
+    function loadData() {
+      try {
+        const rawTasks = localStorage.getItem(CONFIG.STORAGE_KEY_TASKS);
+        tasks = rawTasks ? JSON.parse(rawTasks) : [];
+      } catch (e) { tasks = []; }
+
+      try {
+        const rawReminders = localStorage.getItem(CONFIG.STORAGE_KEY_REMINDERS);
+        reminders = rawReminders ? JSON.parse(rawReminders) : [];
+      } catch (e) { reminders = []; }
+
+      try {
+        const rawStreak = localStorage.getItem(CONFIG.STORAGE_KEY_STREAK);
+        streakData = rawStreak ? JSON.parse(rawStreak) : { count: 0, lastDate: null };
+      } catch (e) { streakData = { count: 0, lastDate: null }; }
+
+      // 如果超过 1 天未打卡，重置连续天数（日期更新由完成操作触发）
+      if (streakData.lastDate) {
+        const today = getTodayStr();
+        const yesterday = getDateStr(-1);
+        if (streakData.lastDate !== today && streakData.lastDate !== yesterday) {
+          streakData.count = 0;
+          streakData.lastDate = null; // 等待下次完成任务时重新计日
+          saveStreak();
+        }
+      }
+    }
+
+    function saveTasks() {
+      try {
+        localStorage.setItem(CONFIG.STORAGE_KEY_TASKS, JSON.stringify(tasks));
+      } catch (e) { /* localStorage 满了 */ }
+    }
+
+    function saveReminders() {
+      try {
+        localStorage.setItem(CONFIG.STORAGE_KEY_REMINDERS, JSON.stringify(reminders));
+      } catch (e) { /* ignore */ }
+    }
+
+    function saveStreak() {
+      try {
+        localStorage.setItem(CONFIG.STORAGE_KEY_STREAK, JSON.stringify(streakData));
+      } catch (e) { /* ignore */ }
+    }
+
+    // ============================================================
+    // 工具函数
+    // ============================================================
+    function getTodayStr() {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+
+    function getDateStr(offsetDays) {
+      const d = new Date();
+      d.setDate(d.getDate() + offsetDays);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+
+    /** 生成简短唯一 ID */
+    function uid() {
+      return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    }
+
+    /** 格式化日期显示 */
+    function formatDate() {
+      const d = new Date();
+      const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
+      return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日 · 星期${weekdays[d.getDay()]}`;
+    }
+
+    /** 随机选取数组元素 */
+    function pickRandom(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    // ============================================================
+    // 进度条更新
+    // ============================================================
+    function updateProgress() {
+      const total = tasks.length;
+      const done = tasks.filter(t => t.done).length;
+      const pct = total === 0 ? 0 : Math.round((done / total) * 100);
+
+      // 环形进度条
+      const circumference = 263.89; // 2 * π * 42 ≈ 263.89
+      const offset = circumference - (pct / 100) * circumference;
+      domProgressCircle.style.strokeDashoffset = offset;
+      domPercent.textContent = pct + '%';
+      domCountDone.textContent = done;
+      domCountTotal.textContent = total;
+
+      // 连续打卡展示
+      if (streakData.count > 0) {
+        domStreakWrap.innerHTML = `<span class="streak-badge">🔥 连续打卡 ${streakData.count} 天</span>`;
+      } else {
+        domStreakWrap.innerHTML = '';
+      }
+    }
+
+    /** 完成任务时检查并更新连续打卡 */
+    function incrementStreakIfNeeded() {
+      const today = getTodayStr();
+      if (streakData.lastDate === today) return; // 今天已记录过
+
+      const yesterday = getDateStr(-1);
+      if (streakData.lastDate === yesterday || streakData.lastDate === null) {
+        streakData.count += 1;
+      } else {
+        streakData.count = 1;
+      }
+      streakData.lastDate = today;
+      saveStreak();
+    }
+
+    // ============================================================
+    // 渲染任务列表
+    // ============================================================
+    function renderTasks() {
+      // 筛选
+      let visible = tasks;
+      if (currentFilter === 'active') {
+        visible = tasks.filter(t => !t.done);
+      } else if (currentFilter === 'completed') {
+        visible = tasks.filter(t => t.done);
+      }
+
+      domTaskList.innerHTML = '';
+
+      if (visible.length === 0) {
+        const msgs = {
+          all: '✨ 暂无任务，快去添加一个热血目标吧！',
+          active: '🎉 所有任务已全部完成，太强了！',
+          completed: '📝 还没有已完成的任务，加油冲刺！',
+        };
+        domEmptyState.textContent = msgs[currentFilter] || msgs.all;
+        domEmptyState.style.display = 'block';
+      } else {
+        domEmptyState.style.display = 'none';
+      }
+
+      visible.forEach(task => {
+        const li = document.createElement('li');
+        li.className = 'task-item' + (task.done ? ' completed' : '');
+        li.dataset.id = task.id;
+
+        // 复选框
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.className = 'task-checkbox';
+        cb.checked = task.done;
+        cb.title = task.done ? '取消完成' : '标记完成';
+        cb.addEventListener('change', () => toggleTask(task.id, cb.checked));
+
+        // 任务文字
+        const span = document.createElement('span');
+        span.className = 'task-text';
+        span.textContent = task.text;
+
+        // 删除按钮
+        const delBtn = document.createElement('button');
+        delBtn.className = 'btn-delete';
+        delBtn.innerHTML = '✕';
+        delBtn.title = '删除任务';
+        delBtn.addEventListener('click', () => deleteTask(task.id, li));
+
+        li.appendChild(cb);
+        li.appendChild(span);
+        li.appendChild(delBtn);
+        domTaskList.appendChild(li);
+      });
+
+      updateProgress();
+    }
+
+    // ============================================================
+    // 任务操作
+    // ============================================================
+    function addTask(text) {
+      const trimmed = text.trim();
+      if (!trimmed) {
+        domTaskInput.focus();
+        shakeElement(domTaskInput);
+        return;
+      }
+
+      const task = {
+        id: uid(),
+        text: trimmed,
+        done: false,
+        createdAt: Date.now(),
+      };
+      tasks.unshift(task); // 新任务放在最前面
+      saveTasks();
+      domTaskInput.value = '';
+      domTaskInput.focus();
+      renderTasks();
+
+      // 新任务滑入动画由 CSS 自动处理
+    }
+
+    function toggleTask(id, isDone) {
+      const task = tasks.find(t => t.id === id);
+      if (!task) return;
+      task.done = isDone;
+
+      if (isDone) {
+        incrementStreakIfNeeded();
+        updateProgress();
+        saveTasks();
+        renderTasks();
+        // 延迟弹窗等勾选动画播完
+        setTimeout(() => showMotivationToast(), 350);
+      } else {
+        saveTasks();
+        renderTasks();
+      }
+    }
+
+    function deleteTask(id, liElement) {
+      // 退出动画
+      if (liElement) {
+        liElement.classList.add('removing');
+        liElement.addEventListener('animationend', function handler() {
+          liElement.removeEventListener('animationend', handler);
+          removeTaskFromData(id);
+        });
+      } else {
+        removeTaskFromData(id);
+      }
+    }
+
+    function removeTaskFromData(id) {
+      tasks = tasks.filter(t => t.id !== id);
+      saveTasks();
+      renderTasks();
+    }
+
+    function clearCompleted() {
+      const hasCompleted = tasks.some(t => t.done);
+      if (!hasCompleted) return;
+
+      // 简单确认（不弹原生对话框以免破坏视觉）
+      tasks = tasks.filter(t => !t.done);
+      saveTasks();
+      renderTasks();
+    }
+
+    // ============================================================
+    // 筛选切换
+    // ============================================================
+    function setFilter(filter) {
+      currentFilter = filter;
+      domFilterBtns.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.filter === filter);
+      });
+      renderTasks();
+    }
+
+    // ============================================================
+    // 激励弹窗
+    // ============================================================
+    function showMotivationToast() {
+      // 清除之前的弹窗
+      if (toastTimer) { clearTimeout(toastTimer); }
+      domToastOverlay.innerHTML = '';
+
+      const doneCount = tasks.filter(t => t.done).length;
+      const total = tasks.length;
+
+      // 判断是否触发每日达标文案
+      let cheer;
+      if (total > 0 && doneCount >= CONFIG.DAILY_GOAL && doneCount >= total) {
+        cheer = pickRandom(GOAL_CHEERS);
+      } else {
+        cheer = pickRandom(CHEERS);
+      }
+
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.innerHTML = `<span class="emoji">${cheer.emoji}</span>${cheer.text}`;
+      domToastOverlay.appendChild(toast);
+
+      toastTimer = setTimeout(() => {
+        domToastOverlay.innerHTML = '';
+        toastTimer = null;
+      }, CONFIG.TOAST_DURATION);
+    }
+
+    // ============================================================
+    // 振动反馈（输入框抖动）
+    // ============================================================
+    function shakeElement(el) {
+      el.style.animation = 'none';
+      el.offsetHeight; // 触发回流
+      el.style.animation = 'shake 0.4s ease';
+      el.addEventListener('animationend', function h() {
+        el.removeEventListener('animationend', h);
+        el.style.animation = '';
+      });
+    }
+
+    // 在 style 中动态注入 shake 动画
+    const shakeStyle = document.createElement('style');
+    shakeStyle.textContent = `
+      @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        20%       { transform: translateX(-6px); }
+        40%       { transform: translateX(6px); }
+        60%       { transform: translateX(-4px); }
+        80%       { transform: translateX(4px); }
+      }
+    `;
+    document.head.appendChild(shakeStyle);
+
+    // ============================================================
+    // 定时提醒模块
+    // ============================================================
+    function addReminder(timeStr) {
+      if (!timeStr) return;
+      if (reminders.includes(timeStr)) {
+        // 已存在，轻微提示
+        return;
+      }
+      reminders.push(timeStr);
+      reminders.sort(); // 时间排序
+      saveReminders();
+      renderReminders();
+    }
+
+    function removeReminder(timeStr) {
+      reminders = reminders.filter(r => r !== timeStr);
+      saveReminders();
+      renderReminders();
+    }
+
+    function renderReminders() {
+      domReminderList.innerHTML = '';
+      reminders.forEach(timeStr => {
+        const tag = document.createElement('span');
+        tag.className = 'reminder-tag';
+        tag.innerHTML = `🕐 ${timeStr} <span class="del-tag" data-time="${timeStr}">✕</span>`;
+        domReminderList.appendChild(tag);
+      });
+
+      // 绑定删除事件
+      domReminderList.querySelectorAll('.del-tag').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          removeReminder(btn.dataset.time);
+        });
+      });
+    }
+
+    /** 检查是否有提醒到期 */
+    function checkReminders() {
+      if (reminders.length === 0) return;
+      if (Notification.permission !== 'granted') return;
+
+      const now = new Date();
+      const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+      // 匹配当前时间（精确到分钟）
+      if (reminders.includes(currentTime)) {
+        // 防止同一分钟重复通知（用 sessionStorage 记录）
+        const notifiedKey = `reminded_${currentTime}`;
+        if (sessionStorage.getItem(notifiedKey)) return;
+        sessionStorage.setItem(notifiedKey, '1');
+
+        const activeTasks = tasks.filter(t => !t.done);
+        const taskListStr = activeTasks.length > 0
+          ? activeTasks.map((t, i) => `${i + 1}. ${t.text}`).join('\n')
+          : '暂无待完成事项，休息一下吧~';
+
+        try {
+          new Notification('⚡ 热血提醒 · 该打卡了！', {
+            body: `📋 未完成事项：\n${taskListStr}`,
+            icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🔥</text></svg>',
+            tag: `reminder-${currentTime}`,
+            requireInteraction: true,
+          });
+        } catch (e) { /* 通知失败 */ }
+      }
+    }
+
+    /** 自动申请通知权限 */
+    function requestNotificationPermission() {
+      if (!('Notification' in window)) return; // 浏览器不支持
+      if (Notification.permission === 'granted' || Notification.permission === 'denied') return;
+
+      // 首次打开自动申请
+      Notification.requestPermission().then(perm => {
+        if (perm === 'granted') {
+          // 权限获取成功（静默）
+        }
+      });
+    }
+
+    // ============================================================
+    // 事件绑定
+    // ============================================================
+
+    // 添加任务
+    domBtnAdd.addEventListener('click', () => addTask(domTaskInput.value));
+    domTaskInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') addTask(domTaskInput.value);
+    });
+
+    // 筛选按钮
+    domFilterBtns.forEach(btn => {
+      btn.addEventListener('click', () => setFilter(btn.dataset.filter));
+    });
+
+    // 清空已完成
+    domBtnClear.addEventListener('click', clearCompleted);
+
+    // 添加提醒
+    domBtnAddReminder.addEventListener('click', () => {
+      addReminder(domTimeInput.value);
+      domTimeInput.value = '';
+    });
+
+    // ============================================================
+    // 初始化
+    // ============================================================
+    function init() {
+      loadData();
+      renderTasks();
+      renderReminders();
+      domDateDisplay.textContent = formatDate();
+      updateProgress();
+
+      // 自动申请通知权限
+      requestNotificationPermission();
+
+      // 启动提醒检查定时器
+      if (reminderIntervalId) clearInterval(reminderIntervalId);
+      reminderIntervalId = setInterval(checkReminders, CONFIG.REMINDER_CHECK_INTERVAL);
+
+      // 凌晨重置 sessionStorage 的提醒标记
+      scheduleMidnightReset();
+    }
+
+    /** 安排午夜重置提醒标记 */
+    function scheduleMidnightReset() {
+      const now = new Date();
+      const midnight = new Date(now);
+      midnight.setHours(24, 0, 0, 0);
+      const msUntilMidnight = midnight - now;
+
+      setTimeout(() => {
+        sessionStorage.clear(); // 清除提醒标记以便第二天正常触发
+        scheduleMidnightReset(); // 递归安排下一天
+      }, msUntilMidnight + 1000); // +1s 确保过了午夜
+    }
+
+    // 页面加载完成后初始化
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+
+    // 页面关闭前保存数据（极端情况兜底）
+    window.addEventListener('beforeunload', () => {
+      saveTasks();
+      saveReminders();
+      saveStreak();
+    });
+
+    // 页面可见性变化时检查提醒（标签页切回来时）
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        checkReminders();
+      }
+    });
+
+    console.log('🔥 热血打卡待办已就绪！');
+    console.log('   - 所有数据保存至 localStorage');
+    console.log('   - 通知权限：' + (Notification.permission || '不支持'));
+    console.log('   - 当前提醒时间：' + (reminders.length > 0 ? reminders.join(', ') : '暂无'));
+    console.log('   - 连续打卡：' + streakData.count + ' 天');
+  })();
+  </script>
+</body>
+</html>
