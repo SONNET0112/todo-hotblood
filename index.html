@@ -247,6 +247,36 @@
     }
     @keyframes rippleAnim { to { transform: scale(4); opacity: 0; } }
 
+    /* 通知权限提示条 */
+    .notify-banner {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      padding: 10px 14px; margin-bottom: 12px;
+      border-radius: var(--radius-sm);
+      font-size: 0.82rem; font-weight: 600;
+      animation: slideInUp 0.35s var(--ease-bounce);
+    }
+    .notify-banner.warning {
+      background: rgba(255,107,53,0.1); border: 1px solid rgba(255,107,53,0.25); color: #cc4a1c;
+    }
+    .notify-banner.success {
+      background: rgba(0,210,160,0.08); border: 1px solid rgba(0,210,160,0.25); color: #008a60;
+    }
+    .notify-banner-icon { font-size: 1.2rem; flex-shrink: 0; }
+    .notify-banner-msg { flex: 1; min-width: 0; }
+    .btn-notify-enable {
+      flex-shrink: 0;
+      padding: 6px 16px;
+      background: linear-gradient(135deg, var(--accent), #ff4500);
+      color: #fff; border: none; border-radius: 18px;
+      font-size: 0.78rem; font-weight: 700; cursor: pointer;
+      white-space: nowrap;
+      transition: transform var(--dur-fast) var(--ease-bounce), box-shadow var(--dur-fast) var(--ease-smooth);
+    }
+    .btn-notify-enable:hover {
+      transform: translateY(-1px); box-shadow: 0 4px 14px rgba(255,107,53,0.35);
+    }
+    .btn-notify-enable:active { transform: scale(0.94); }
+
     .reminder-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
     .reminder-tag {
       display: inline-flex; align-items: center; gap: 6px;
@@ -596,6 +626,12 @@
     <!-- ===== [2] 提醒设置区 ===== -->
     <section class="reminder-section">
       <div class="section-label">⏰ 每日定时提醒</div>
+      <!-- 通知权限提示条 -->
+      <div class="notify-banner" id="notifyBanner" style="display:none">
+        <span class="notify-banner-icon">🔔</span>
+        <span class="notify-banner-msg" id="notifyBannerMsg"></span>
+        <button class="btn-notify-enable" id="btnNotifyEnable">开启通知</button>
+      </div>
       <div class="reminder-row">
         <input type="time" id="timeInput" title="选择提醒时间">
         <button class="btn-reminder" id="btnAddReminder">➕ 添加提醒</button>
@@ -696,6 +732,9 @@
     const domReminderList  = $('#reminderList');
     const domTimeInput     = $('#timeInput');
     const domBtnAddReminder = $('#btnAddReminder');
+    const domNotifyBanner   = $('#notifyBanner');
+    const domNotifyBannerMsg = $('#notifyBannerMsg');
+    const domBtnNotifyEnable = $('#btnNotifyEnable');
     const domEmptyState    = $('#emptyState');
     const domEmptyIcon     = $('#emptyIcon');
     const domEmptyMsg      = $('#emptyMsg');
@@ -1041,22 +1080,75 @@
         b.addEventListener('click', e => { e.stopPropagation(); removeReminder(b.dataset.time); });
       });
     }
+    /** 更新通知权限提示条 */
+    function updateNotifyBanner() {
+      const banner = domNotifyBanner;
+      const msg    = domNotifyBannerMsg;
+      const btn    = domBtnNotifyEnable;
+      if (!('Notification' in window)) {
+        banner.style.display = 'flex'; banner.className = 'notify-banner warning';
+        msg.textContent = '你的浏览器不支持桌面通知';
+        btn.style.display = 'none'; return;
+      }
+      const perm = Notification.permission;
+      if (perm === 'granted') {
+        banner.style.display = 'flex'; banner.className = 'notify-banner success';
+        msg.textContent = '通知已开启，到点自动弹窗提醒';
+        btn.textContent = '测试'; btn.style.display = '';
+        btn.onclick = () => {
+          new Notification('🔥 热血提醒测试成功！', {
+            body: '这就是你到点会收到的提醒样式～',
+            icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🔥</text></svg>',
+            requireInteraction: true,
+          });
+        };
+        btn.className = 'btn-notify-enable';
+        btn.style.background = 'linear-gradient(135deg, #00d2a0, #00a87e)';
+      } else if (perm === 'denied') {
+        banner.style.display = 'flex'; banner.className = 'notify-banner warning';
+        msg.textContent = '通知已被拒绝，请在浏览器设置中手动开启';
+        btn.style.display = 'none';
+      } else {
+        // default —— 需要用户手动点击开启
+        banner.style.display = 'flex'; banner.className = 'notify-banner warning';
+        msg.textContent = '开启桌面通知，到点自动提醒你打卡';
+        btn.textContent = '🔔 开启通知'; btn.style.display = '';
+        btn.className = 'btn-notify-enable';
+        btn.style.background = '';
+        btn.onclick = async () => {
+          try {
+            const result = await Notification.requestPermission();
+            updateNotifyBanner();
+            if (result === 'granted') {
+              // 立即测试一次
+              new Notification('🔥 热血提醒已就绪！', {
+                body: '到设定时间会自动弹出提醒～',
+                icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🔥</text></svg>',
+              });
+            }
+          } catch (e) { updateNotifyBanner(); }
+        };
+      }
+    }
+
     function checkReminders() {
-      if (!reminders.length || Notification.permission!=='granted') return;
+      if (!reminders.length || Notification.permission !== 'granted') return;
       const now = new Date();
       const cur = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
       if (!reminders.includes(cur)) return;
       const key = `reminded_${cur}`;
       if (sessionStorage.getItem(key)) return;
       sessionStorage.setItem(key, '1');
-      const active = tasks.filter(t=>!t.done);
-      const body = active.length ? active.map((t,i)=>`${i+1}. ${t.text}`).join('\n') : '暂无待完成事项，休息一下吧~';
-      try { new Notification('⚡ 热血提醒 · 该打卡了！', { body:`📋 未完成事项：\n${body}`, icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🔥</text></svg>', tag:`reminder-${cur}`, requireInteraction:true }); } catch(e){}
-    }
-    function requestNotificationPermission() {
-      if (!('Notification' in window)) return;
-      if (Notification.permission==='granted'||Notification.permission==='denied') return;
-      Notification.requestPermission();
+      const active = tasks.filter(t => !t.done);
+      const body = active.length ? active.map((t, i) => `${i + 1}. ${t.text}`).join('\n') : '暂无待完成事项，休息一下吧~';
+      try {
+        new Notification('⚡ 热血提醒 · 该打卡了！', {
+          body: `📋 未完成事项：\n${body}`,
+          icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🔥</text></svg>',
+          tag: `reminder-${cur}`,
+          requireInteraction: true,
+        });
+      } catch (e) { /* 通知失败 */ }
     }
 
     // ============================================================
@@ -1082,7 +1174,7 @@
       renderReminders();
       domDateDisplay.textContent = formatDate();
       updateProgress();
-      requestNotificationPermission();
+      updateNotifyBanner();
       if (reminderIntervalId) clearInterval(reminderIntervalId);
       reminderIntervalId = setInterval(checkReminders, CONFIG.REMINDER_CHECK_INTERVAL);
       scheduleMidnightReset();
